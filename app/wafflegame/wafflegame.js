@@ -158,11 +158,11 @@ export default function WaffleGame() {
     return (
         <div className='waffle-game-wrapper'>
             <div className='vomit-box'>
-                <p className='red-glowing-text text-6xl' id='boy-waffle'>{boyWaffleText}</p>
+                <p className='red-glowing-text' id='boy-waffle'>{boyWaffleText}</p>
             </div>
             <Board interactive={true} board={game[0]} handleMove={handleMove} />
             <div className='vomit-box'>
-                <p className='red-glowing-text text-6xl'>SPECIAL WAFFLE</p>
+                <p className='red-glowing-text'>SPECIAL WAFFLE</p>
             </div>
             <Board interactive={false} board={game[1]} />
         </div>
