@@ -1,10 +1,10 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import { StandardLayout } from './layout';
 
 export default function Home() {
     return (
-        <main className="grid grid-rows-[auto_1fr] gap-6 min-h-dvh max-w-6xl mx-auto p-6">
-
+        <StandardLayout>
             <div className="basic-card">
                 <div className="p-4 text-4xl text-center">Jackson Wright's Website</div>
                 <div className="p-4 text-l">
@@ -43,7 +43,6 @@ export default function Home() {
 
                 </div>
             </div>
-
-        </main>
+        </StandardLayout>
     );
 }
