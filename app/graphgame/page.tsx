@@ -9,7 +9,7 @@ import InputRecorder from "./inputRecorder";
 export default function Page() {
     return (
         <div style={{ width: "100vw", height: "100vh" }}>
-            <InputRecorder/>
+            <InputRecorder />
             <Canvas
                 camera={{
                     position: [0, 0, 15],
@@ -20,7 +20,7 @@ export default function Page() {
             >
                 <ambientLight intensity={0.5} />
                 <directionalLight position={[0, 50, 100]} />
-                <GraphView/>
+                <GraphView />
             </Canvas>
         </div>
     );
