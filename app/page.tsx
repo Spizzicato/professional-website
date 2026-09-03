@@ -2,7 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { StandardLayout } from './layout';
 
-export default function Home() {
+export default function Page() {
     return (
         <StandardLayout>
             <div className="basic-card">
@@ -15,6 +15,7 @@ export default function Home() {
                     I also minored in mathematics and Computational Mathematics, Science, and Engineering (CMSE).
                     For contact information, or to learn more about my education and work experience, please visit the resume linked on this page.
                     <br/><br/>
+                    I am interested in mathematics, physics, data science, machine learning, AI, and audio engineering. 
                     In my free time, I enjoy programming, playing the piano, composing music, video games, cooking, biking, and more.  
                 </div>
             </div>

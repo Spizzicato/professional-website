@@ -18,9 +18,7 @@ export default function RootLayout(
     return (
         <html lang="en" className={`${nunito.className} h-full antialiased`}>
             <body>
-                <div className="min-h-dvh bg-linear-to-b from-[#E7FFB9] via-emerald-300 to-blue-300 text-black">
-                    {children}
-                </div>
+                {children}
             </body>
         </html>
     );
@@ -53,12 +51,14 @@ export function StandardLayout(
     {children}: Readonly<{children: React.ReactNode}>,
 ) {
     return (
-        <div className="
-            grid grid-rows-1 grid-cols-1 justify-items-center
-            lg:grid-cols-[1fr_4fr_1fr]
-        ">
-            <Navbar/>
-            <Main children={children}/>
+        <div className="min-h-dvh bg-linear-to-b from-[#E7FFB9] via-emerald-300 to-blue-300 text-black">
+            <div className="
+                grid grid-rows-1 grid-cols-1 justify-items-center
+                lg:grid-cols-[1fr_4fr_1fr]
+            ">
+                <Navbar/>
+                <Main children={children}/>
+            </div>
         </div>
     );
 }
