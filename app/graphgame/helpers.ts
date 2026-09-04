@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { MathUtils } from 'three';
+import { ImprovedNoise } from 'three/addons/math/ImprovedNoise.js';
 
 export const clickPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
 
@@ -21,4 +22,14 @@ export function rotateAroundAxis(
     object.position.sub(point);
     object.position.applyQuaternion(q);
     object.position.add(point);
+}
+
+const perlin = new ImprovedNoise();
+const perlinScale = 0.1;
+
+export function getColorFromPosition(position: THREE.Vector3): THREE.Color {
+    const color = new THREE.Color();
+    const timeOffset = performance.now() * 0.0002;
+    color.setHSL(perlin.noise(position.x * perlinScale, position.y * perlinScale, timeOffset), 1, 0.5);
+    return color;
 }

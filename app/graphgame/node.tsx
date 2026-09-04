@@ -1,14 +1,18 @@
 import * as THREE from "three";
 import GraphEdge from "./edge";
 import { randomChoice, randomOffset, randomPositiveOffset } from './helpers';
+import { NodeSynth } from "./nodeSynth";
+
+
 
 export default class GraphNode {
     id!: string;
-    neighbors: Map<GraphNode, GraphEdge> = new Map();
+    neighbors: Set<GraphNode> = new Set();
     mesh!: THREE.Mesh;
     initialPosition!: THREE.Vector3;
     initialRotation!: THREE.Euler;
     initialScale!: THREE.Vector3;
+    synth: NodeSynth = new NodeSynth();
 
     constructor(id: string, position?: THREE.Vector3) {
         this.id = id;
@@ -22,7 +26,7 @@ export default class GraphNode {
     }
 
     getRandomNeighbor(): GraphNode | undefined {
-        const neighbors = Array.from(this.neighbors.keys());
+        const neighbors = Array.from(this.neighbors);
         if (neighbors.length === 0) return undefined;
         return randomChoice(neighbors);
     }

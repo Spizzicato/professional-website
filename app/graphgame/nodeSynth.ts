@@ -2,6 +2,7 @@ import * as Tone from 'tone';
 import { randomOffset, randomPositiveOffset } from './helpers';
 
 
+
 export class NodeSynth {
     synth = new Tone.FMSynth().toDestination();
     frequency!: number;
@@ -17,10 +18,10 @@ export class NodeSynth {
 
         this.synth.set({
             envelope: {
-                attack: 0.005,
-                decay: 0.5,
+                attack: 0.001,
+                decay: 0.05 + 0.1 * randomPositiveOffset(),
                 sustain: 0,
-                release: 0.5 + 0.4 * randomOffset()
+                release: 0.05 + 0.1 * randomPositiveOffset(),
             },
             oscillator: {
                 type: "sine"
@@ -28,7 +29,7 @@ export class NodeSynth {
             modulation: {
                 type: "sine",
             },
-            modulationIndex: 300 * randomPositiveOffset(),
+            modulationIndex: 200 * randomPositiveOffset(),
             harmonicity: 2 + randomOffset()
         });
 

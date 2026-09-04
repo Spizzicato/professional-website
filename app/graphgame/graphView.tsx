@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useThree, useFrame } from "@react-three/fiber";
 import { useGraphStore } from "./graphStore";
 import NodeView from "./nodeView";
@@ -6,13 +6,24 @@ import EdgeView from "./edgeView";
 import * as THREE from "three";
 import { useInputStore } from "./inputStore";
 import { clickPlane } from "./helpers";
+import WalkerView from "./walkerView";
 
 
 
 export function GraphView() {
     const { camera, pointer, raycaster, scene } = useThree();
 	const nodes = useGraphStore(state => state.nodes);
-	const edges = useGraphStore(state => state.edges);
+    const edgesRaw = useGraphStore(state => state.edges);
+	const edges = useMemo(() => {
+		return Array.from(
+			new Set(
+                Array.from(
+                    edgesRaw.values()).flatMap((e) => Array.from(e.values())
+                )
+			)
+		);
+	}, [edgesRaw]);
+    const walkers = useGraphStore(state => state.walkers);
 
     useEffect(() => {
         // initial graph setup
@@ -21,16 +32,36 @@ export function GraphView() {
         const a = graph.addNode(new THREE.Vector3(-5, 0, 0));
         const b = graph.addNode(new THREE.Vector3(5, 0, 0));
         graph.addEdge(a, b);
+        graph.addWalker(a);
 
         // probably fixes a bug where grabbed nodes occasionally do not get released
-        const handlePointerUp = () => {
+        const handlePointerUp = (event: PointerEvent) => {
             const graph = useGraphStore.getState();
             graph.releaseGrabbedNode();
         }
         window.addEventListener('pointerup', handlePointerUp);
 
+        const handleWheel = (event: WheelEvent) => {
+            if (event.deltaY > 0) {
+                for (const walker of walkers) {
+                    console.log('increasing walk speed', walker.walkSpeed);
+                    walker.walkSpeed += 0.1;
+                    walker.walkSpeed = Math.min(16, walker.walkSpeed);
+                }
+            } 
+            else if (event.deltaY < 0) {
+                for (const walker of walkers) {
+                    console.log('decreasing walk speed', walker.walkSpeed);
+                    walker.walkSpeed -= 0.1;
+                    walker.walkSpeed = Math.max(1, walker.walkSpeed); 
+                }
+            }
+        }
+        window.addEventListener('wheel', handleWheel);
+
         return () => {
             window.removeEventListener('pointerup', handlePointerUp);
+            // window.removeEventListener('wheel', handleWheel);
         };
     }, []);
 
@@ -76,7 +107,7 @@ export function GraphView() {
             }
         }
 
-        for (const edge of graph.edges.values()) {
+        for (const edge of edges) {
             const { a, b, mesh: edgeMesh } = edge;
             if (!a || !b || !edgeMesh) continue;
 
@@ -115,6 +146,11 @@ export function GraphView() {
             <group>
                 {[...edges.values()].map((edge) => (
                     <EdgeView key={edge.id} edge={edge} />
+                ))}
+            </group>
+            <group>
+                {[...walkers.values()].map((walker) => (
+                    <WalkerView key={walker.id} walker={walker} />
                 ))}
             </group>
         </group>

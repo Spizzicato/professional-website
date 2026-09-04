@@ -4,12 +4,6 @@ import { useFrame } from "@react-three/fiber";
 import type GraphEdge from "./edge";
 
 const edgeRadius = 0.1;
-const edgeGeometry = new THREE.CylinderGeometry(edgeRadius, edgeRadius, 1, 16, 1);
-const edgeMaterial = new THREE.MeshStandardMaterial({ 
-    color: 0xaaaaaa,
-    roughness: 0.2,
-    metalness: 1.0,
-});
 
 interface EdgeViewProps {
 	edge: GraphEdge;
@@ -46,8 +40,15 @@ export default function EdgeView({ edge }: EdgeViewProps) {
 	return (
 		<mesh
 			ref={meshRef}
-			geometry={edgeGeometry}
-			material={edgeMaterial}
-		/>
+		>
+            <cylinderGeometry
+                args={[edgeRadius, edgeRadius, 1, 16, 1]}
+            />
+            <meshStandardMaterial
+                color={0xaaaaaa}
+                roughness={0.2}
+                metalness={1.0}
+            />
+        </mesh>
 	);
 }

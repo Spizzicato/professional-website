@@ -14,7 +14,5 @@ export default class GraphEdge {
         this.id = id;
         this.a = a;
         this.b = b;
-        a.neighbors.set(b, this);
-        b.neighbors.set(a, this);
     }
 }

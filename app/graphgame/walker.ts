@@ -1,152 +1,79 @@
-// import * as THREE from 'three';
-// import { GraphStore, useGraphStore} from "./graphStore";
-// import GraphNode from "./node";
-// import GraphEdge from "./edge";
-// import { randomChoice } from "./helpers";
-// import { start } from "tone";
+import * as THREE from 'three';
+import { GraphStore, useGraphStore } from "./graphStore";
+import GraphNode from "./node";
+import GraphEdge from "./edge";
+import { randomChoice } from "./helpers";
+import { start } from "tone";
 
 
 
-// const walkerGeometry = new THREE.DodecahedronGeometry(1.3);
-// const walkerMaterial = new THREE.MeshStandardMaterial({ 
-//     color: 0xffffff,
+export default class GraphWalker {
+    id!: string;
+    mesh!: THREE.Mesh;
+    sourceNode!: GraphNode | undefined;
+    targetNode!: GraphNode | undefined;
+    progress: number = 0;
+    walkSpeed: number = 8;
     
-// 	transparent: true,
-// 	opacity: 0.5,
+    constructor(id: string, initialNode: GraphNode) {
+        this.id = id;
+        const graph = useGraphStore.getState();
 
-// 	metalness: 0.0,
-// 	roughness: 0.4,
-// });
+        if (initialNode !== undefined) {
+            this.sourceNode = initialNode;
+        }
+        else {
+            const randomNode = graph.getRandomNode();
+            if (randomNode) {
+                this.sourceNode = randomNode;
+                this.mesh.position.copy(this.sourceNode.mesh.position);
+            }
+        }
 
+        this.updateTarget();
+    }
 
+    updateTarget() {
+        const graph = useGraphStore.getState();
 
-// export class Walker {
-//     graph!: Graph;
-//     mesh!: THREE.Mesh;
+        // if no current node, attempt to find new current node
+        if (!this.sourceNode) {
+            const randomNode = graph.getRandomNode();
+            if (randomNode) {
+                this.sourceNode = randomNode;
+            }
+        }
 
-//     currentNode!: GraphNode | undefined;
-//     targetNode!: GraphNode | undefined;
-    
-//     walkSpeed: number = 24;
-    
-//     constructor(graph: Graph, initialNode?: GraphNode) {
-//         this.graph = graph;
-//         this.mesh = new THREE.Mesh(walkerGeometry, walkerMaterial);
+        // second check
+        if (!this.sourceNode) {
+            this.targetNode = undefined;
+            return;
+        }
 
-//         if (initialNode) {
-//             this.currentNode = initialNode;
-//             this.mesh.position.copy(this.currentNode.mesh.position);
-//         }
-//         else {
-//             const randomNode = this.graph.getRandomNode();
-//             if (randomNode) {
-//                 this.currentNode = randomNode;
-//                 this.mesh.position.copy(this.currentNode.mesh.position);
-//             }
-//         }
+        if (!graph.nodes.has(this.sourceNode)) {
+            this.sourceNode = undefined;
+            this.targetNode = undefined;
+        }
+        else if (!this.targetNode) {
+            this.targetNode = this.sourceNode.getRandomNeighbor();
+        }
+        else if (!graph.nodes.has(this.sourceNode)) {
+            this.targetNode = undefined;
+        }
 
-//         this.updateTarget();
-//         setInterval(this.updateTarget.bind(this), 50);
-//     }
+        this.progress = 0;
+    }
 
-//     updateTarget() {
-//         // If no current node, attempt to find new current node
-//         if (!this.currentNode) {
-//             const randomNode = this.graph.getRandomNode();
-//             if (randomNode) {
-//                 this.currentNode = randomNode;
-//             }
-//         }
+    visitNode(node: GraphNode) {
+        this.sourceNode = node;
+        this.targetNode = undefined;
+        this.mesh.position.copy(node.mesh.position);
 
-//         // Second check
-//         if (!this.currentNode) {
-//             this.targetNode = undefined;
-//             return;
-//         }
+        node.synth.play();
+        
+        node.mesh.userData.walkerEffectStrength += 2;
+        node.mesh.userData.walkerEffectStrength = THREE.MathUtils.clamp(node.mesh.userData.walkerEffectStrength, 0, 4);
 
-//         if (this.currentNode.deleted) {
-//             this.currentNode = undefined;
-//             this.targetNode = undefined;
-//         }
-//         else {
-//             if (this.targetNode && this.targetNode.deleted) {
-//                 this.targetNode = undefined;
-//             }
-
-//             if (!this.targetNode) {
-//                 this.targetNode = this.currentNode.getRandomNeighbor();
-//             }
-//         }
-//     }
-
-//     visitNode(node: GraphNode) {
-//         this.currentNode = node;
-//         this.targetNode = undefined;
-//         this.mesh.position.copy(node.mesh.position);
-
-//         node.synth.play();
-
-//         node.mesh.userData.walkerEffectStrength += 2;
-//         node.mesh.userData.walkerEffectStrength = THREE.MathUtils.clamp(node.mesh.userData.walkerEffectStrength, 0, 4);
-
-//         this.updateTarget();
-//     }
-
-//     handleUndefinedPath() {
-//         this.mesh.visible = false;
-//         this.mesh.scale.set(1, 1, 1);      
-//     }
-
-//     animate(dt: number) {
-//         if (this.currentNode) {
-//             console.log('cur');
-//             this.mesh.visible = true;
-            
-//             if (this.targetNode && this.targetNode !== this.currentNode) {
-//                 this.mesh.visible = true;
-
-//                 const currentPos = this.currentNode.mesh.position;
-//                 const targetPos = this.targetNode.mesh.position;
-
-//                 const sourceToTarget = targetPos.clone().sub(currentPos);
-//                 const sourceToTargetDistance = sourceToTarget.length();
-//                 sourceToTarget.normalize();
-
-//                 const sourceToWalker = this.mesh.position.clone().sub(currentPos);
-//                 const proj = sourceToWalker.dot(sourceToTarget);
-//                 const progress = proj / sourceToTargetDistance;
-
-//                 const moveAmount = this.walkSpeed * dt;
-//                 const next = proj + moveAmount;
-
-//                 const centerCloseness = 2 * (0.5 - Math.abs(progress - 0.5));
-
-//                 let scale = 1 - 0.4 * Math.sqrt(centerCloseness);
-//                 scale *= (this.currentNode.mesh.scale.x + this.targetNode.mesh.scale.x) * 0.5;
-//                 scale += 0.1;
-//                 this.mesh.scale.set(scale, scale, scale);
-
-//                 if (next >= sourceToTargetDistance) {
-//                     this.mesh.position.copy(targetPos);
-//                     this.visitNode(this.targetNode);
-//                 }
-//                 else {
-//                     const pos = currentPos.clone().add(sourceToTarget.clone().multiplyScalar(next));
-//                     this.mesh.position.copy(pos);
-//                 }
-//             }
-//             else {
-//                 this.mesh.position.copy(this.currentNode.mesh.position);
-//             }
-//         }
-//         else {
-//             this.mesh.scale.set(1, 1, 1);
-//             this.mesh.visible = false;
-//         }
-
-//         this.mesh.position.setZ(0);
-//         this.mesh.rotateX(-0.2 * dt);
-//         this.mesh.rotateY(-1.6 * dt);
-//     }
-
-// }
+        this.updateTarget();
+    }
+}

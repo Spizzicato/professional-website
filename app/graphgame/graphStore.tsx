@@ -2,19 +2,19 @@ import * as THREE from "three";
 import { create } from "zustand";
 import GraphNode from "./node";
 import GraphEdge from "./edge";
-
-const getEdgeKey = (a: GraphNode, b: GraphNode) => [a.id, b.id].sort().join('-');
+import GraphWalker from "./walker";
 
 export interface GraphStore {
 	nodes: Set<GraphNode>;
-	edges: Map<string, GraphEdge>;
+	edges: Map<string, Map<string, GraphEdge>>;
+	walkers: Set<GraphWalker>;
 	topId: number;
 
 	grabbedNode: GraphNode | undefined;
 	grabOffset: THREE.Vector3 | undefined;
 	edgeStart: GraphNode | undefined;
 
-	getNewId: () => string;
+	getNewIntId: () => string;
 
 	edgeStarted: () => boolean;
 	startEdge: (a: GraphNode) => void;
@@ -28,20 +28,24 @@ export interface GraphStore {
 	addEdge: (a: GraphNode, b: GraphNode) => GraphEdge;
 	removeEdge: (a: GraphNode, b: GraphNode) => void;
 	removeNode: (node: GraphNode) => void;
+
+	getRandomNode: () => GraphNode;
+
+	addWalker: (startNode?: GraphNode) => void;
+	removeWalker: (walker: GraphWalker) => void;
 }
-
-
 
 export const useGraphStore = create<GraphStore>((set, get) => ({
 	nodes: new Set(),
 	edges: new Map(),
+	walkers: new Set(),
 	topId: -1,
 
 	grabbedNode: undefined,
 	grabOffset: undefined,
 	edgeStart: undefined,
 
-	getNewId: () => {
+	getNewIntId: () => {
 		const id = get().topId + 1;
 		set({ topId: id });
 		return `${id}`;
@@ -59,10 +63,10 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
 		const canEnd =
 			!!edgeStart &&
 			edgeStart !== b &&
-			!get().edges.has(getEdgeKey(edgeStart, b));
+			!get().edgeExists(edgeStart, b);
 
 		if (canEnd) {
-			get().addEdge(edgeStart!, b);
+			get().addEdge(edgeStart, b);
 		}
 
 		set({ edgeStart: undefined });
@@ -84,8 +88,8 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
 		});
 	},
 
-	addNode: (position) => {
-		const node = new GraphNode(get().getNewId(), position);
+	addNode: (position?: THREE.Vector3) => {
+		const node = new GraphNode(get().getNewIntId(), position ?? new THREE.Vector3(0, 0, 0));
 
 		set((state) => {
 			const nodes = new Set(state.nodes);
@@ -98,15 +102,25 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
 	},
 
 	edgeExists: (a, b) => {
-		return get().edges.has(getEdgeKey(a, b));
+		return get().edges.get(a.id)?.has(b.id) ?? false;
 	},
 
 	addEdge: (a, b) => {
-		const edge = new GraphEdge(get().getNewId(), a, b);
+		const edge = new GraphEdge(get().getNewIntId(), a, b);
+
+		a.neighbors.add(b);
+		b.neighbors.add(a);
 
 		set((state) => {
 			const edges = new Map(state.edges);
-			edges.set(getEdgeKey(a, b), edge);
+
+			const aEdges = new Map(edges.get(a.id));
+			aEdges.set(b.id, edge);
+			edges.set(a.id, aEdges);
+
+			const bEdges = new Map(edges.get(b.id));
+			bEdges.set(a.id, edge);
+			edges.set(b.id, bEdges);
 
 			return { edges };
 		});
@@ -115,8 +129,7 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
 	},
 
 	removeEdge: (a, b) => {
-		const key = getEdgeKey(a, b);
-		const edge = get().edges.get(key);
+		const edge = get().edges.get(a.id)?.get(b.id);
 
 		if (!edge) return;
 
@@ -125,13 +138,21 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
 
 		set((state) => {
 			const edges = new Map(state.edges);
-			edges.delete(key);
+
+			const aEdges = new Map(edges.get(a.id));
+			aEdges.delete(b.id);
+			edges.set(a.id, aEdges);
+
+			const bEdges = new Map(edges.get(b.id));
+			bEdges.delete(a.id);
+			edges.set(b.id, bEdges);
+
 			return { edges };
 		});
 	},
 
 	removeNode: (node) => {
-		const neighbors = Array.from(node.neighbors.keys());
+		const neighbors = Array.from(node.neighbors);
 
 		for (const neighbor of neighbors) {
 			get().removeEdge(node, neighbor);
@@ -141,7 +162,40 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
 			const nodes = new Set(state.nodes);
 			nodes.delete(node);
 
-			return { nodes };
+			const edges = new Map(state.edges);
+			edges.delete(node.id);
+
+			return { nodes, edges };
+		});
+	},
+
+	getRandomNode: () => {
+		const nodes = Array.from(get().nodes);
+
+		if (nodes.length === 0) {
+			throw new Error("No nodes available to select a random node.");
+		}
+
+		const randomIndex = Math.floor(Math.random() * nodes.length);
+		return nodes[randomIndex];
+	},
+
+	addWalker: (startNode?: GraphNode) => {
+		set((state) => {
+			const walkers = new Set(state.walkers);
+			const walker = new GraphWalker(get().getNewIntId(), startNode ?? get().getRandomNode());
+			walkers.add(walker);
+
+			return { walkers };
+		});
+	},
+
+	removeWalker: (walker: GraphWalker) => {
+		set((state) => {
+			const walkers = new Set(state.walkers);
+			walkers.delete(walker);
+
+			return { walkers };
 		});
 	},
 }));
