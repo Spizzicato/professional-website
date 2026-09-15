@@ -5,7 +5,7 @@ import NodeView from "./nodeView";
 import EdgeView from "./edgeView";
 import * as THREE from "three";
 import { useInputStore } from "./inputStore";
-import { clickPlane } from "./helpers";
+import { clickPlane, gridCellContainingPointContainsAnyNodes, gridSize, nearestGridPoint } from "./helpers";
 import WalkerView from "./walkerView";
 
 
@@ -29,49 +29,43 @@ export function GraphView() {
         // initial graph setup
         const graph = useGraphStore.getState();
         if (graph.nodes.size > 0) return;
-        const a = graph.addNode(new THREE.Vector3(-5, 0, 0));
-        const b = graph.addNode(new THREE.Vector3(5, 0, 0));
+        const a = graph.addNode(new THREE.Vector3(-6, 0, 0));
+        const b = graph.addNode(new THREE.Vector3(6, 0, 0));
         graph.addEdge(a, b);
         graph.addWalker(a);
+
+        const handlePointerDown = () => {
+            const graph = useGraphStore.getState();
+
+            const nodeObjects = [...graph.nodes]
+                .map(node => node.mesh)
+                .filter((mesh) => mesh !== undefined);
+
+            const hits = raycaster.intersectObjects(nodeObjects, true);
+
+            if (hits.length > 0) {
+                graph.grabNode(hits[0].object.userData.node, hits[0].point.clone().sub(hits[0].object.position));
+                graph.selectNode(hits[0].object.userData.node);
+            }
+        };
 
         // probably fixes a bug where grabbed nodes occasionally do not get released
         const handlePointerUp = (event: PointerEvent) => {
             const graph = useGraphStore.getState();
             graph.releaseGrabbedNode();
         }
+
+        window.addEventListener('pointerdown', handlePointerDown);
         window.addEventListener('pointerup', handlePointerUp);
 
-        const handleWheel = (event: WheelEvent) => {
-            if (event.deltaY > 0) {
-                for (const walker of walkers) {
-                    console.log('increasing walk speed', walker.walkSpeed);
-                    walker.walkSpeed += 0.1;
-                    walker.walkSpeed = Math.min(16, walker.walkSpeed);
-                }
-            } 
-            else if (event.deltaY < 0) {
-                for (const walker of walkers) {
-                    console.log('decreasing walk speed', walker.walkSpeed);
-                    walker.walkSpeed -= 0.1;
-                    walker.walkSpeed = Math.max(1, walker.walkSpeed); 
-                }
-            }
-        }
-        window.addEventListener('wheel', handleWheel);
-
         return () => {
+            window.removeEventListener('pointerdown', handlePointerDown);
             window.removeEventListener('pointerup', handlePointerUp);
-            // window.removeEventListener('wheel', handleWheel);
         };
     }, []);
 
-    const edgeVec = new THREE.Vector3();
-    const t = new THREE.Vector3();
-    const q = new THREE.Quaternion();
-    const up = new THREE.Vector3(0, 1, 0);
-    const cross = new THREE.Vector3();
-    const s = new THREE.Vector3();
-    const mat = new THREE.Matrix4();
+    
+
 
     useFrame((state, dt) => {
         const graph = useGraphStore.getState();
@@ -82,7 +76,7 @@ export function GraphView() {
 
         const { keysDown, justPressed } = useInputStore.getState();
 
-        if (justPressed.has(' ')) {
+        if (justPressed.has(' ') && hit) {
             const hits = raycaster.intersectObjects(scene.children, true);
 
             if (hits[0]?.object.userData.node) {
@@ -94,43 +88,22 @@ export function GraphView() {
                 }
             }
             else {
-                const newNode = graph.addNode(hit);
-                if (graph.edgeStarted()) {
-                    graph.endEdge(newNode);
+                if (!gridCellContainingPointContainsAnyNodes(hit, [...graph.nodes])) {
+                    const newNode = graph.addNode(hit);
+                    if (graph.edgeStarted()) {
+                        graph.endEdge(newNode);
+                    }
                 }
             }
         }
-        
-        for (const node of graph.nodes) {
-            if (node === graph.grabbedNode && graph.grabOffset && hit) {
-                node.mesh.position.lerp(hit.clone().sub(graph.grabOffset), 25 * dt);
+        else if (justPressed.has('Delete')) {
+            const hits = raycaster.intersectObjects(scene.children, true);
+            if (hits[0]?.object.userData.node) {
+                graph.removeNode(hits[0]?.object.userData.node);
             }
         }
-
-        for (const edge of edges) {
-            const { a, b, mesh: edgeMesh } = edge;
-            if (!a || !b || !edgeMesh) continue;
-
-            edgeVec.copy(b.mesh.position).sub(a.mesh.position);
-
-            // translate
-            t.lerpVectors(a.mesh.position, b.mesh.position, 0.5);
-    
-            // rotate
-            cross.copy(up.clone().cross(edgeVec));
-            if (cross.lengthSq() < 1e-8) {
-                // edge case handling
-                if (edgeVec.dot(up) < 0)
-                    q.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI);
-            } 
-            else {
-                q.setFromAxisAngle(cross.normalize(), up.angleTo(edgeVec));
-            }
-    
-            // scale
-            s.set(1, edgeVec.length(), 1);
-    
-            edgeMesh.matrix.copy(mat.compose(t, q, s));
+        else if (justPressed.has('Escape')) {
+            graph.deselectNode();
         }
 
         justPressed.clear();

@@ -4,6 +4,7 @@ import GraphNode from "./node";
 import GraphEdge from "./edge";
 import { randomChoice } from "./helpers";
 import { start } from "tone";
+import WalkerView from './walkerView';
 
 
 
@@ -13,7 +14,7 @@ export default class GraphWalker {
     sourceNode!: GraphNode | undefined;
     targetNode!: GraphNode | undefined;
     progress: number = 0;
-    walkSpeed: number = 8;
+    walkSpeed: number = 16;
     
     constructor(id: string, initialNode: GraphNode) {
         this.id = id;
@@ -62,6 +63,7 @@ export default class GraphWalker {
         }
 
         this.progress = 0;
+        if (this.sourceNode?.mesh !== undefined) this.mesh.position.copy(this.sourceNode.mesh.position);
     }
 
     visitNode(node: GraphNode) {
@@ -69,6 +71,7 @@ export default class GraphWalker {
         this.targetNode = undefined;
         this.mesh.position.copy(node.mesh.position);
 
+        node.angularVelocity = Math.min(node.angularVelocity + 4, 40);
         node.synth.play();
         
         node.mesh.userData.walkerEffectStrength += 2;

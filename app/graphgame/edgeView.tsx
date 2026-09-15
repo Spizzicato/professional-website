@@ -5,41 +5,61 @@ import type GraphEdge from "./edge";
 
 const edgeRadius = 0.1;
 
+const edgeVec = new THREE.Vector3();
+const t = new THREE.Vector3();
+const q = new THREE.Quaternion();
+const up = new THREE.Vector3(0, 1, 0);
+const cross = new THREE.Vector3();
+const s = new THREE.Vector3();
+const mat = new THREE.Matrix4();
+
 interface EdgeViewProps {
 	edge: GraphEdge;
 }
 
 export default function EdgeView({ edge }: EdgeViewProps) {
-	const meshRef = useRef<THREE.Mesh>(null);
-
-	const direction = new THREE.Vector3();
-	const midpoint = new THREE.Vector3();
-	const up = new THREE.Vector3(0, 1, 0);
 
 	useFrame(() => {
-		const mesh = meshRef.current;
-		const a = edge.a.mesh.position;
-		const b = edge.b.mesh.position;
+        const { a, b, mesh } = edge;
 
-		if (!mesh) return;
+        edgeVec.copy(b.mesh.position).sub(a.mesh.position);
 
-		direction.subVectors(b, a);
+        // translate
+        t.lerpVectors(a.mesh.position, b.mesh.position, 0.5);
 
-		const length = direction.length();
-		if (length === 0) return;
+        // rotate
+        cross.copy(up).cross(edgeVec);
 
-		direction.normalize();
+        if (cross.lengthSq() < 1e-8) {
+            // edge is parallel or anti-parallel to up
+            if (edgeVec.dot(up) < 0) {
+                q.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI);  // pointing down so rotate 180
+            } 
+            else {
+                q.identity();  // already pointing up
+            }
+        } 
+        else {
+            q.setFromAxisAngle(cross.normalize(), up.angleTo(edgeVec));
+        }
 
-		midpoint.lerpVectors(a, b, 0.5);
+        // scale
+        s.set(1, edgeVec.length(), 1);
 
-		mesh.position.copy(midpoint);
-		mesh.quaternion.setFromUnitVectors(up, direction);
-		mesh.scale.set(1, length, 1);
+        mesh.matrix.copy(mat.compose(t, q, s));
 	});
 
 	return (
 		<mesh
-			ref={meshRef}
+            key={edge.id}
+
+            matrixAutoUpdate={false}
+
+            ref={(mesh) => {
+                if (!mesh || mesh === edge.mesh) return;
+                edge.mesh = mesh;
+                mesh.userData.edge = edge;
+            }}
 		>
             <cylinderGeometry
                 args={[edgeRadius, edgeRadius, 1, 16, 1]}

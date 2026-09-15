@@ -7,14 +7,18 @@ import { GraphView } from "./graphView";
 import InputRecorder from "./inputRecorder";
 import Lighting from "./lighting";
 import { useGraphStore } from "./graphStore";
+import NodeMenu from "./nodeMenu";
+import CameraPan from "./cameraPan";
 
 
 
 export default function Page() {
     return (
-        <div style={{ width: "100vw", height: "100vh" }}>
+        <div className="relative w-full h-dvh">
             <InputRecorder />
             <Canvas
+                className="w-full h-full"
+
                 orthographic={true}
                 
                 camera={{
@@ -24,24 +28,26 @@ export default function Page() {
                     far: 1000,
                 }}
 
-                onWheel={(event) => {
-                    if (event.deltaY < 0) {
-                        for (const walker of useGraphStore.getState().walkers) {
-                            walker.walkSpeed += 4;
-                            walker.walkSpeed = Math.min(241, walker.walkSpeed);
-                        }
-                    }
-                    else if (event.deltaY > 0) {
-                        for (const walker of useGraphStore.getState().walkers) {
-                            walker.walkSpeed -= 4;
-                            walker.walkSpeed = Math.max(1, walker.walkSpeed); 
-                        }
-                    }
-                }}
+                // onWheel={(event) => {
+                //     if (event.deltaY < 0) {
+                //         for (const walker of useGraphStore.getState().walkers) {
+                //             walker.walkSpeed += 4;
+                //             walker.walkSpeed = Math.min(241, walker.walkSpeed);
+                //         }
+                //     }
+                //     else if (event.deltaY > 0) {
+                //         for (const walker of useGraphStore.getState().walkers) {
+                //             walker.walkSpeed -= 4;
+                //             walker.walkSpeed = Math.max(1, walker.walkSpeed); 
+                //         }
+                //     }
+                // }}
             >
+                <CameraPan />
                 <Lighting />
                 <GraphView />
             </Canvas>
+            <NodeMenu />
         </div>
     );
 }

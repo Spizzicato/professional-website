@@ -13,6 +13,7 @@ export default class GraphNode {
     initialRotation!: THREE.Euler;
     initialScale!: THREE.Vector3;
     synth: NodeSynth = new NodeSynth();
+    angularVelocity: number = 1;
 
     constructor(id: string, position?: THREE.Vector3) {
         this.id = id;

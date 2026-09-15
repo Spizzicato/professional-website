@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { MathUtils } from 'three';
 import { ImprovedNoise } from 'three/addons/math/ImprovedNoise.js';
+import { useGraphStore } from './graphStore';
+import GraphNode from './node';
 
 export const clickPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
 
@@ -33,3 +35,31 @@ export function getColorFromPosition(position: THREE.Vector3): THREE.Color {
     color.setHSL(perlin.noise(position.x * perlinScale, position.y * perlinScale, timeOffset), 1, 0.5);
     return color;
 }
+
+export const gridSize = 2;
+
+export function nearestGridPoint(v: THREE.Vector3, gridWidth: number = gridSize, gridHeight: number = gridSize): THREE.Vector3 {
+    return new THREE.Vector3().set(gridWidth * Math.round(v.x / gridWidth), gridHeight * Math.round(v.y / gridHeight), v.z);
+}
+
+const epsilon = 0.1;
+export function gridCellContainingPointContainsAnyNodes(point: THREE.Vector3, nodes: Array<GraphNode>) {
+    const snapped = nearestGridPoint(point);
+
+    const box = new THREE.Box3(
+        new THREE.Vector3(
+            snapped.x - gridSize / 2 - epsilon,
+            snapped.y - gridSize / 2 - epsilon,
+            snapped.z - gridSize / 2 - epsilon
+        ),
+        new THREE.Vector3(
+            snapped.x + gridSize / 2 + epsilon,
+            snapped.y + gridSize / 2 + epsilon,
+            snapped.z + gridSize / 2 + epsilon
+        )
+    );
+
+    return nodes.find(node => box.containsPoint(node.mesh!.position));
+}
+
+export type ParameterOption = [string, number];
