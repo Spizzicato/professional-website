@@ -1,0 +1,7 @@
+problems with walker on node or edge deletion
+
+zoom randomly stops working, usually after you select a node
+
+you can zoom the entire page or canvas with gestures
+
+text on nodes does not scale with zoom

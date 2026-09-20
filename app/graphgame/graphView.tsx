@@ -64,9 +64,6 @@ export function GraphView() {
         };
     }, []);
 
-    
-
-
     useFrame((state, dt) => {
         const graph = useGraphStore.getState();
 
@@ -76,31 +73,36 @@ export function GraphView() {
 
         const { keysDown, justPressed } = useInputStore.getState();
 
-        if (justPressed.has(' ') && hit) {
-            const hits = raycaster.intersectObjects(scene.children, true);
+        const nodeObjects = [...graph.nodes]
+            .map(node => node.mesh)
+            .filter((mesh) => mesh !== undefined);
 
-            if (hits[0]?.object.userData.node) {
-                if (graph.edgeStarted()) {
-                    graph.endEdge(hits[0].object.userData.node);
-                }
-                else {
-                    graph.startEdge(hits[0].object.userData.node);
-                }
+        const hits = raycaster.intersectObjects(nodeObjects, true);
+
+        const node = hits[0]?.object.userData.node ?? undefined;
+        if (node)
+            graph.hoverNode(node);
+        else
+            graph.unhoverNode();
+
+        if (justPressed.has(' ') && hit) {
+            if (node) {
+                if (graph.edgeStarted())
+                    graph.endEdge(node);
+                else
+                    graph.startEdge(node);
             }
             else {
                 if (!gridCellContainingPointContainsAnyNodes(hit, [...graph.nodes])) {
                     const newNode = graph.addNode(hit);
-                    if (graph.edgeStarted()) {
+                    if (graph.edgeStarted()) 
                         graph.endEdge(newNode);
-                    }
                 }
             }
         }
         else if (justPressed.has('Delete')) {
-            const hits = raycaster.intersectObjects(scene.children, true);
-            if (hits[0]?.object.userData.node) {
-                graph.removeNode(hits[0]?.object.userData.node);
-            }
+            if (node) 
+                graph.removeNode(node);
         }
         else if (justPressed.has('Escape')) {
             graph.deselectNode();

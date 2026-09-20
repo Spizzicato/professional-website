@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { create } from "zustand";
+import { subscribeWithSelector } from "zustand/middleware";
 import GraphNode from "./node";
 import GraphEdge from "./edge";
 import GraphWalker from "./walker";
@@ -10,13 +11,15 @@ export interface GraphStore {
 	walkers: Set<GraphWalker>;
 	topId: number;
 
-    selectedNode: GraphNode | undefined;
+	selectedNode: GraphNode | undefined;
+	hoveredNode: GraphNode | undefined;
+
 	grabbedNode: GraphNode | undefined;
 	grabOffset: THREE.Vector3 | undefined;
 
 	edgeStart: GraphNode | undefined;
 
-    synthVersion: number;
+	synthVersion: number;
 
 	getNewIntId: () => string;
 
@@ -24,8 +27,11 @@ export interface GraphStore {
 	startEdge: (a: GraphNode) => void;
 	endEdge: (b: GraphNode) => boolean;
 
-    selectNode: (node: GraphNode) => void;
-    deselectNode: () => void;
+	selectNode: (node: GraphNode) => void;
+	deselectNode: () => void;
+
+	hoverNode: (node: GraphNode) => void;
+	unhoverNode: () => void;
 
 	grabNode: (node: GraphNode, pos: THREE.Vector3) => void;
 	releaseGrabbedNode: () => void;
@@ -41,16 +47,22 @@ export interface GraphStore {
 	addWalker: (startNode?: GraphNode) => void;
 	removeWalker: (walker: GraphWalker) => void;
 
-    setNodeSynthParameter: (node: GraphNode, parameter: number, value: number) => void;
+	setNodeSynthParameter: (
+		node: GraphNode,
+		parameter: number,
+		value: number
+	) => void;
 }
 
-export const useGraphStore = create<GraphStore>((set, get) => ({
+export const useGraphStore = create<GraphStore>()(subscribeWithSelector((set, get) => ({
 	nodes: new Set(),
 	edges: new Map(),
 	walkers: new Set(),
 	topId: -1,
 
     selectedNode: undefined,
+
+    hoveredNode: undefined,
 
 	grabbedNode: undefined,
 	grabOffset: undefined,
@@ -97,6 +109,18 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
     deselectNode: () => {
         set({
             selectedNode: undefined,
+        });
+    },
+
+    hoverNode: (node) => {
+        set({
+            hoveredNode: node,
+        });
+    },
+
+    unhoverNode: () => {
+        set({
+            hoveredNode: undefined,
         });
     },
 
@@ -191,24 +215,7 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
 			const edges = new Map(state.edges);
 			edges.delete(node.id);
 
-            [...state.walkers].map((walker) => {
-                console.log('enter');
-                const a = walker.sourceNode;
-                const b = walker.targetNode;
-                if (a === node) {
-                    walker.sourceNode = b;
-                    walker.targetNode = undefined;
-                }
-                else {
-                    walker.sourceNode = a;
-                    walker.targetNode = undefined;
-                }
-                walker.updateTarget();
-            });
-
-            const walkers = new Set(state.walkers);
-
-			return { nodes, edges, walkers };
+			return { nodes, edges };
 		});
 	},
 
@@ -249,4 +256,4 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
             synthVersion: state.synthVersion + 1,
         }));
     },
-}));
+})));

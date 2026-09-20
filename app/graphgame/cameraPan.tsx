@@ -2,6 +2,9 @@ import { useThree, useFrame } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { useGraphStore } from "./graphStore";
+import { useInputStore } from "./inputStore";
+
+const zoomFactor = 1.1;
 
 export default function CameraPan() {
 	const { camera } = useThree();
@@ -12,7 +15,9 @@ export default function CameraPan() {
 	const targetPosition = useRef(new THREE.Vector3());
 	const targetZoom = useRef(camera.zoom);
 
-	const grabbedNode = useGraphStore((state) => state.grabbedNode);
+    const { keysDown, justPressed } = useInputStore.getState();
+
+	const hoveredNode = useGraphStore((state) => state.hoveredNode);
 
 	useEffect(() => {
 		targetPosition.current.copy(camera.position);
@@ -62,11 +67,12 @@ export default function CameraPan() {
 	};
 
 	const handleWheel = (e: WheelEvent) => {
-		const zoomFactor = 1.1;
+        if (keysDown.has('Shift')) return;
 
 		if (e.deltaY < 0) {
 			targetZoom.current *= zoomFactor;
-		} else {
+		}
+        else {
 			targetZoom.current /= zoomFactor;
 		}
 

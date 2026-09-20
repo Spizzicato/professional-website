@@ -2,8 +2,8 @@ import * as THREE from "three";
 import { useThree, useFrame } from "@react-three/fiber";
 import { useGraphStore } from "./graphStore";
 import GraphNode from "./node";
-import { clickPlane } from "./helpers";
-import { useState, useRef } from "react";
+import { clickPlane, parameterDebounceTime } from "./helpers";
+import { useState, useRef, useEffect } from "react";
 import { getColorFromPosition, nearestGridPoint } from "./helpers";
 import { select } from "three/tsl";
 import { Html } from "@react-three/drei";
@@ -17,6 +17,7 @@ interface NodeViewProps {
 }
 
 const hit = new THREE.Vector3();
+const labelZ = 9;
 
 export default function NodeView({ node }: NodeViewProps) {
 	const { camera, pointer, raycaster } = useThree();
@@ -26,7 +27,20 @@ export default function NodeView({ node }: NodeViewProps) {
     
     const selectAuraMeshRef = useRef<THREE.Mesh>(null);
     const selectAuraMaterialRef = useRef<THREE.MeshStandardMaterial>(null);
-    
+
+    const labelRef = useRef<THREE.Group>(null);
+
+    const synthVersion = useGraphStore((state) => state.synthVersion);
+
+    const [displayName, setDisplayName] = useState(() => node.synth.getSelectedOptionName(0));
+    const displayTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => {
+        if (displayTimeout.current) clearTimeout(displayTimeout.current);
+        displayTimeout.current = setTimeout(() => { setDisplayName(node.synth.getSelectedOptionName(0)); }, parameterDebounceTime);
+        return () => { if (displayTimeout.current) clearTimeout(displayTimeout.current); };
+    }, [synthVersion]);
+
     useFrame((state, dt) => {
         const graph = useGraphStore.getState();
 
@@ -58,12 +72,17 @@ export default function NodeView({ node }: NodeViewProps) {
         selectAuraMeshRef.current?.position.set(node.mesh.position.x, node.mesh.position.y, -20);
         selectAuraMeshRef.current?.scale.copy(node.mesh.scale);
         selectAuraMeshRef.current?.rotation.copy(node.mesh.rotation);
+
+        if (labelRef.current) {
+            labelRef.current.position.copy(node.mesh.position);
+            labelRef.current.position.setZ(labelZ);
+        }
     });
 
 	return (
-        <>
+        <group key={`${node.id}-group`}>
             <mesh
-                key={node.id}
+                key={`${node.id}-node`}
 
                 ref={(mesh) => {
                     if (!mesh || mesh === node.mesh) return;
@@ -104,6 +123,30 @@ export default function NodeView({ node }: NodeViewProps) {
                     roughness={0.4}
                 />
             </mesh>
-        </>
+
+            <group
+                key={`${node.id}-label`}
+                ref={(group) => {
+                    if (!group) return;
+                    labelRef.current = group;
+                    group.position.copy(node.mesh.position);
+                    group.position.z = labelZ;
+                }}
+                raycast={() => null}
+            >
+                <Html
+                    center
+                    style={{
+                        color: "white",
+                        fontSize: "24px",
+                        pointerEvents: "none",
+                        textShadow: "2px 2px 4px rgba(0, 0, 0, 0.8)",
+                    }}
+                    raycast={() => null}
+                >
+                    {node.synth.getSelectedOptionName(0)}
+                </Html>
+            </group>
+        </group>
 	);
 }

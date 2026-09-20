@@ -63,3 +63,5 @@ export function gridCellContainingPointContainsAnyNodes(point: THREE.Vector3, no
 }
 
 export type ParameterOption = [string, number];
+
+export const parameterDebounceTime = 60;

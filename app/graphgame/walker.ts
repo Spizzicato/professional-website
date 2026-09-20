@@ -5,7 +5,8 @@ import GraphEdge from "./edge";
 import { randomChoice } from "./helpers";
 import { start } from "tone";
 import WalkerView from './walkerView';
-
+import { subscribeWithSelector } from 'zustand/middleware';
+import { shallow } from 'zustand/shallow';
 
 
 export default class GraphWalker {
@@ -15,10 +16,29 @@ export default class GraphWalker {
     targetNode!: GraphNode | undefined;
     progress: number = 0;
     walkSpeed: number = 16;
+
+    private unsubscribeFromGraphStructure!: () => void;
     
     constructor(id: string, initialNode: GraphNode) {
         this.id = id;
         const graph = useGraphStore.getState();
+
+        this.unsubscribeFromGraphStructure = useGraphStore.subscribe(
+			state => [state.nodes, state.edges] as const,
+            ([nodes, edges], [prevNodes, prevEdges]) => {
+                const graph = useGraphStore.getState();
+                if (
+                    !this.sourceNode || !nodes.has(this.sourceNode) ||
+                    !this.targetNode || !nodes.has(this.targetNode)
+                ) {
+                    this.updateTarget();
+                } 
+                else if (!graph.edgeExists(this.sourceNode, this.targetNode) || !graph.edgeExists(this.targetNode, this.sourceNode)) {
+                    this.updateTarget();
+                }
+			},
+            { equalityFn: shallow }
+		);
 
         if (initialNode !== undefined) {
             this.sourceNode = initialNode;
@@ -54,11 +74,9 @@ export default class GraphWalker {
         if (!graph.nodes.has(this.sourceNode)) {
             this.sourceNode = undefined;
             this.targetNode = undefined;
-        }
-        else if (!this.targetNode) {
+        } else if (!this.targetNode) {
             this.targetNode = this.sourceNode.getRandomNeighbor();
-        }
-        else if (!graph.nodes.has(this.sourceNode)) {
+        } else if (this.targetNode && !graph.nodes.has(this.targetNode)) {
             this.targetNode = undefined;
         }
 
