@@ -32,14 +32,20 @@ export default function WalkerView({ walker }: WalkerViewProps) {
     }, [walker]);
 
     useFrame((state, dt) => {
+        if (!walker.mesh) return;
+
         walker.mesh.rotation.z += 1 * dt;
         walker.mesh.rotation.y += 5 * dt;
 
 	    materialRef.current!.color.set(getColorFromPosition(walker.mesh.position));
 
-        if (!walker.sourceNode) return;
-        if (!walker.targetNode) {
-            walker.mesh.position.copy(walker.sourceNode.mesh.position);
+        if (!walker.currentPathIsValid()) {
+            walker.updateTarget();
+        }
+
+        if (!walker.sourceNode?.mesh) return;
+        if (!walker.targetNode?.mesh) {
+            walker.snapToSource();
             return;
         }
         const pathLen = 0.75 * (Math.abs(walker.targetNode.mesh.position.x - walker.sourceNode.mesh.position.x) + Math.abs(walker.targetNode.mesh.position.y - walker.sourceNode.mesh.position.y));
@@ -50,6 +56,7 @@ export default function WalkerView({ walker }: WalkerViewProps) {
         walker.progress += v;
         if (walker.progress >= 1) {
             walker.visitNode(walker.targetNode);
+            return;
         }
         walker.mesh.position.copy(walker.sourceNode.mesh.position.clone().lerp(walker.targetNode.mesh.position, walker.progress));
         walker.mesh.position.z = 4;

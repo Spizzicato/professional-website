@@ -1,12 +1,8 @@
 import * as THREE from 'three';
-import { GraphStore, useGraphStore } from "./graphStore";
+import { useGraphStore } from "./graphStore";
 import GraphNode from "./node";
-import GraphEdge from "./edge";
-import { randomChoice } from "./helpers";
-import { start } from "tone";
-import WalkerView from './walkerView';
-import { subscribeWithSelector } from 'zustand/middleware';
 import { shallow } from 'zustand/shallow';
+
 
 
 export default class GraphWalker {
@@ -25,17 +21,9 @@ export default class GraphWalker {
 
         this.unsubscribeFromGraphStructure = useGraphStore.subscribe(
 			state => [state.nodes, state.edges] as const,
-            ([nodes, edges], [prevNodes, prevEdges]) => {
-                const graph = useGraphStore.getState();
-                if (
-                    !this.sourceNode || !nodes.has(this.sourceNode) ||
-                    !this.targetNode || !nodes.has(this.targetNode)
-                ) {
-                    this.updateTarget();
-                } 
-                else if (!graph.edgeExists(this.sourceNode, this.targetNode) || !graph.edgeExists(this.targetNode, this.sourceNode)) {
-                    this.updateTarget();
-                }
+            ([nodes, edges]) => {
+                this.updateTarget();
+                this.mesh.visible = nodes.size > 0;
 			},
             { equalityFn: shallow }
 		);
@@ -44,56 +32,72 @@ export default class GraphWalker {
             this.sourceNode = initialNode;
         }
         else {
-            const randomNode = graph.getRandomNode();
+            const randomNode = graph.nodes.size > 0 ? graph.getRandomNode() : undefined;
             if (randomNode) {
                 this.sourceNode = randomNode;
-                this.mesh.position.copy(this.sourceNode.mesh.position);
             }
         }
 
         this.updateTarget();
     }
 
+    currentPathIsValid() {
+        const graph = useGraphStore.getState();
+        return (
+            !!this.sourceNode &&
+            graph.nodes.has(this.sourceNode) &&
+            !!this.targetNode &&
+            graph.nodes.has(this.targetNode) &&
+            graph.edgeExists(this.sourceNode, this.targetNode)
+        );
+    }
+
     updateTarget() {
         const graph = useGraphStore.getState();
 
-        // if no current node, attempt to find new current node
-        if (!this.sourceNode) {
-            const randomNode = graph.getRandomNode();
-            if (randomNode) {
-                this.sourceNode = randomNode;
-            }
-        }
-
-        // second check
-        if (!this.sourceNode) {
-            this.targetNode = undefined;
+        if (this.currentPathIsValid()) {
             return;
         }
 
-        if (!graph.nodes.has(this.sourceNode)) {
-            this.sourceNode = undefined;
-            this.targetNode = undefined;
-        } else if (!this.targetNode) {
+        const sourceValid = !!this.sourceNode && graph.nodes.has(this.sourceNode);
+        const targetValid = !!this.targetNode && graph.nodes.has(this.targetNode);
+
+        if (sourceValid) {
+            this.targetNode = this.sourceNode!.getRandomNeighbor();
+        } else if (targetValid) {
+            this.sourceNode = this.targetNode;
+            this.targetNode = this.sourceNode!.getRandomNeighbor();
+        } else if (graph.nodes.size > 0) {
+            this.sourceNode = graph.getRandomNode();
             this.targetNode = this.sourceNode.getRandomNeighbor();
-        } else if (this.targetNode && !graph.nodes.has(this.targetNode)) {
+        } else {
+            this.sourceNode = undefined;
             this.targetNode = undefined;
         }
 
         this.progress = 0;
-        if (this.sourceNode?.mesh !== undefined) this.mesh.position.copy(this.sourceNode.mesh.position);
+        this.snapToSource();
+    }
+
+    snapToSource() {
+        if (this.mesh && this.sourceNode?.mesh) {
+            this.mesh.position.copy(this.sourceNode.mesh.position);
+            this.mesh.position.z = 4;
+        }
     }
 
     visitNode(node: GraphNode) {
         this.sourceNode = node;
         this.targetNode = undefined;
-        this.mesh.position.copy(node.mesh.position);
+        this.snapToSource();
 
         node.angularVelocity = Math.min(node.angularVelocity + 4, 40);
         node.synth.play();
         
-        node.mesh.userData.walkerEffectStrength += 2;
-        node.mesh.userData.walkerEffectStrength = THREE.MathUtils.clamp(node.mesh.userData.walkerEffectStrength, 0, 4);
+        if (node.mesh) {
+            node.mesh.userData.walkerEffectStrength += 2;
+            node.mesh.userData.walkerEffectStrength = THREE.MathUtils.clamp(node.mesh.userData.walkerEffectStrength, 0, 4);
+        }
 
         this.updateTarget();
     }
