@@ -9,24 +9,26 @@ import Lighting from "./lighting";
 import { useGraphStore } from "./graphStore";
 import NodeMenu from "./nodeMenu";
 import CameraPan from "./cameraPan";
+import GridBackground from "./gridBackground";
 
 
 
 export default function Page() {
     return (
-        <div className="relative w-full h-dvh">
+        <div className="relative w-full h-dvh overflow-hidden overscroll-none touch-none">
             <InputRecorder />
             <Canvas
-                className="w-full h-full"
+                className="w-full h-full touch-none"
                 orthographic={true}
                 camera={{
-                    position: [0, 0, 10],
+                    position: [24, 16, 10],
                     zoom: 50,
                     near: 0.1,
                     far: 1000,
                 }}
             >
                 <CameraPan />
+                <GridBackground />
                 <Lighting />
                 <GraphView />
             </Canvas>

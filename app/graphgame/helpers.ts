@@ -37,6 +37,31 @@ export function getColorFromPosition(position: THREE.Vector3): THREE.Color {
 }
 
 export const gridSize = 2;
+export const worldBoundMin = gridSize;
+export const worldBoundMax = 200;
+
+export function clampOrthographicView(
+	position: THREE.Vector3,
+	zoom: number,
+	viewWidth: number,
+	viewHeight: number,
+	minZoom: number,
+	maxZoom: number,
+) {
+	const span = worldBoundMax - worldBoundMin;
+	const zoomClamped = MathUtils.clamp(
+		zoom,
+		Math.max(minZoom, viewWidth / span, viewHeight / span),
+		maxZoom,
+	);
+	const halfW = viewWidth / (2 * zoomClamped);
+	const halfH = viewHeight / (2 * zoomClamped);
+
+	position.x = MathUtils.clamp(position.x, worldBoundMin + halfW, worldBoundMax - halfW);
+	position.y = MathUtils.clamp(position.y, worldBoundMin + halfH, worldBoundMax - halfH);
+
+	return zoomClamped;
+}
 
 export function nearestGridPoint(v: THREE.Vector3, gridWidth: number = gridSize, gridHeight: number = gridSize): THREE.Vector3 {
     return new THREE.Vector3().set(gridWidth * Math.round(v.x / gridWidth), gridHeight * Math.round(v.y / gridHeight), v.z);

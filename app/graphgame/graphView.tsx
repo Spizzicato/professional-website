@@ -30,8 +30,8 @@ export function GraphView() {
         // initial graph setup
         const graph = useGraphStore.getState();
         if (graph.nodes.size > 0) return;
-        const a = graph.addNode(new THREE.Vector3(-6, 0, 0));
-        const b = graph.addNode(new THREE.Vector3(6, 0, 0));
+        const a = graph.addNode(new THREE.Vector3(18, 16, 0));
+        const b = graph.addNode(new THREE.Vector3(30, 16, 0));
         graph.addEdge(a, b);
         graph.addWalker(a);
 
@@ -129,6 +129,16 @@ export function GraphView() {
         }
         else if (isJustPressed('Escape')) {
             graph.deselectNode();
+        }
+        else if (isJustPressed('ArrowUp')) {
+            for (const walker of graph.walkers) {
+                walker.walkSpeed += 4;
+            }
+        }
+        else if (isJustPressed('ArrowDown')) {
+            for (const walker of graph.walkers) {
+                walker.walkSpeed = Math.max(0, walker.walkSpeed - 4);
+            }
         }
 
         clearJustPressed();

@@ -1,9 +1,8 @@
 import * as THREE from 'three';
-import { useThree, useFrame } from "@react-three/fiber";
+import { useFrame } from "@react-three/fiber";
 import GraphWalker from './walker';
-import { useState, useRef, useEffect } from 'react';
+import { useRef } from 'react';
 import { getColorFromPosition } from './helpers';
-import { useInputStore } from './inputStore';
 
 const walkerGeometry = new THREE.SphereGeometry(1, 32, 32);
 const defaultScale = 1.33;
@@ -15,33 +14,7 @@ interface WalkerViewProps {
 export default function WalkerView({ walker }: WalkerViewProps) {
     const materialRef = useRef<THREE.MeshStandardMaterial>(null);
 
-    // useEffect(() => {
-    //     const handleKeyDown = (e: KeyboardEvent) => {
-    //         if (e.code === "ArrowUp") {
-    //             walker.walkSpeed += 4;
-    //         }
-    //         else if (e.code === "ArrowDown") {
-                
-    //         }
-    //     };
-
-    //     window.addEventListener("keydown", handleKeyDown);
-
-    //     return () => {
-    //         window.removeEventListener("keydown", handleKeyDown);
-    //     };
-    // }, [walker]);
-
     useFrame((state, dt) => {
-        const { isDown, isJustPressed, clearJustPressed } = useInputStore.getState();
-
-        if (isJustPressed('UpArrow')) {
-            walker.walkSpeed += 4;
-        }
-        else if (isJustPressed('DownArrow')) {
-            walker.walkSpeed = Math.max(0, walker.walkSpeed - 4);
-        }
-
         if (!walker.mesh) return;
 
         walker.mesh.rotation.z += 1 * dt;
