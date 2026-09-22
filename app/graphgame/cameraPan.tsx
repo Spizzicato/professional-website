@@ -15,8 +15,6 @@ export default function CameraPan() {
 	const targetPosition = useRef(new THREE.Vector3());
 	const targetZoom = useRef(camera.zoom);
 
-    const { keysDown, justPressed } = useInputStore.getState();
-
 	const hoveredNode = useGraphStore((state) => state.hoveredNode);
 
 	useEffect(() => {
@@ -25,7 +23,7 @@ export default function CameraPan() {
 	}, [camera]);
 
 	useFrame((state, dt) => {
-		const snappiness = 24;
+		const snappiness = 28;
 		const alpha = 1 - Math.exp(-snappiness * dt);
 
 		// smooth movement
@@ -67,7 +65,7 @@ export default function CameraPan() {
 	};
 
 	const handleWheel = (e: WheelEvent) => {
-        if (keysDown.has('Shift')) return;
+        if (useInputStore.getState().isDown('Control')) return;
 
 		if (e.deltaY < 0) {
 			targetZoom.current *= zoomFactor;

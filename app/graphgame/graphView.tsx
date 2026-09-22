@@ -7,6 +7,7 @@ import * as THREE from "three";
 import { useInputStore } from "./inputStore";
 import { clickPlane, gridCellContainingPointContainsAnyNodes, gridSize, nearestGridPoint } from "./helpers";
 import WalkerView from "./walkerView";
+import GraphNode from "./node";
 
 
 
@@ -49,6 +50,26 @@ export function GraphView() {
             }
         };
 
+        const handleWheel = (e: WheelEvent) => {
+            if (!useInputStore.getState().isDown('Control')) return;
+
+            const graph = useGraphStore.getState();
+
+            const nodeObjects = [...graph.nodes]
+                .map(node => node.mesh)
+                .filter((mesh) => mesh !== undefined);
+
+            const hits = raycaster.intersectObjects(nodeObjects, true);
+
+            if (hits.length > 0) {
+                const node: GraphNode = hits[0].object.userData.node;
+                const value = node.synth.getParameterOptionIndex(0);
+                const options = node.synth.getParameterOptions(0);
+                const nextValue = Math.max(0, Math.min(value + (e.deltaY < 0 ? 1 : -1), options.length - 1));
+                graph.setNodeSynthParameter(node, 0, nextValue);
+            }
+        };
+
         // probably fixes a bug where grabbed nodes occasionally do not get released
         const handlePointerUp = (event: PointerEvent) => {
             const graph = useGraphStore.getState();
@@ -57,10 +78,12 @@ export function GraphView() {
 
         window.addEventListener('pointerdown', handlePointerDown);
         window.addEventListener('pointerup', handlePointerUp);
+        window.addEventListener('wheel', handleWheel);
 
         return () => {
             window.removeEventListener('pointerdown', handlePointerDown);
             window.removeEventListener('pointerup', handlePointerUp);
+            window.removeEventListener('wheel', handleWheel);
         };
     }, []);
 
@@ -71,7 +94,7 @@ export function GraphView() {
         raycaster.setFromCamera(pointer, camera);
         const hit = raycaster.ray.intersectPlane(clickPlane, target) ?? undefined;
 
-        const { keysDown, justPressed } = useInputStore.getState();
+        const { isDown, isJustPressed, clearJustPressed } = useInputStore.getState();
 
         const nodeObjects = [...graph.nodes]
             .map(node => node.mesh)
@@ -85,7 +108,7 @@ export function GraphView() {
         else
             graph.unhoverNode();
 
-        if (justPressed.has(' ') && hit) {
+        if (isJustPressed(' ') && hit) {
             if (node) {
                 if (graph.edgeStarted())
                     graph.endEdge(node);
@@ -100,15 +123,15 @@ export function GraphView() {
                 }
             }
         }
-        else if (justPressed.has('Delete')) {
+        else if (isJustPressed('Delete')) {
             if (node) 
                 graph.removeNode(node);
         }
-        else if (justPressed.has('Escape')) {
+        else if (isJustPressed('Escape')) {
             graph.deselectNode();
         }
 
-        justPressed.clear();
+        clearJustPressed();
     });
     
     return (

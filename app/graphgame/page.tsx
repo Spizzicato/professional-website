@@ -18,36 +18,19 @@ export default function Page() {
             <InputRecorder />
             <Canvas
                 className="w-full h-full"
-
                 orthographic={true}
-                
                 camera={{
                     position: [0, 0, 10],
                     zoom: 50,
                     near: 0.1,
                     far: 1000,
                 }}
-
-                // onWheel={(event) => {
-                //     if (event.deltaY < 0) {
-                //         for (const walker of useGraphStore.getState().walkers) {
-                //             walker.walkSpeed += 4;
-                //             walker.walkSpeed = Math.min(241, walker.walkSpeed);
-                //         }
-                //     }
-                //     else if (event.deltaY > 0) {
-                //         for (const walker of useGraphStore.getState().walkers) {
-                //             walker.walkSpeed -= 4;
-                //             walker.walkSpeed = Math.max(1, walker.walkSpeed); 
-                //         }
-                //     }
-                // }}
             >
                 <CameraPan />
                 <Lighting />
                 <GraphView />
             </Canvas>
-            <NodeMenu />
+            {/* <NodeMenu /> */}
         </div>
     );
 }
