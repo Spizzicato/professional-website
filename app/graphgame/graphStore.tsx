@@ -21,6 +21,8 @@ export interface GraphStore {
 
 	synthVersion: number;
 
+	walkersMoving: boolean;
+
 	getNewIntId: () => string;
 
 	edgeStarted: () => boolean;
@@ -46,6 +48,7 @@ export interface GraphStore {
 
 	addWalker: (startNode?: GraphNode) => void;
 	removeWalker: (walker: GraphWalker) => void;
+	toggleWalkersMoving: () => void;
 
 	setNodeSynthParameter: (
 		node: GraphNode,
@@ -58,6 +61,7 @@ export const useGraphStore = create<GraphStore>()(subscribeWithSelector((set, ge
 	nodes: new Set(),
 	edges: new Map(),
 	walkers: new Set(),
+	walkersMoving: true,
 	topId: -1,
 
     selectedNode: undefined,
@@ -247,6 +251,12 @@ export const useGraphStore = create<GraphStore>()(subscribeWithSelector((set, ge
 
 			return { walkers };
 		});
+	},
+
+	toggleWalkersMoving: () => {
+		set((state) => ({
+			walkersMoving: !state.walkersMoving,
+		}));
 	},
 
     setNodeSynthParameter: (node, parameter, value) => {

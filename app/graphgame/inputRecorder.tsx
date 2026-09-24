@@ -19,20 +19,14 @@ export default function InputRecorder() {
 			syncModifiers(e);
             keyDown(e.key);
 
-			if (e.key === "ArrowUp" || e.key === "ArrowDown" || e.key === "ArrowLeft" || e.key === "ArrowRight") {
+			if (e.key === " " || e.key === "Enter" || e.key === "ArrowUp" || e.key === "ArrowDown" || e.key === "ArrowLeft" || e.key === "ArrowRight") {
 				e.preventDefault();
 			}
 
 			if (e.ctrlKey || e.metaKey) {
 				if (
-					e.key === "+" ||
-					e.key === "-" ||
-					e.key === "=" ||
-					e.key === "_" ||
-					e.key === "0" ||
-					e.code === "NumpadAdd" ||
-					e.code === "NumpadSubtract" ||
-					e.code === "NumpadZero"
+					e.key === "+" || e.key === "-" || e.key === "=" || e.key === "_" || e.key === "0" ||
+					e.code === "NumpadAdd" || e.code === "NumpadSubtract" || e.code === "NumpadZero"
 				) {
 					e.preventDefault();
 				}

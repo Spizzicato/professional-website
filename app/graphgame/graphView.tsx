@@ -18,8 +18,8 @@ export function GraphView() {
 	const edges = useMemo(() => {
 		return Array.from(
 			new Set(
-                Array.from(
-                    edgesRaw.values()).flatMap((e) => Array.from(e.values())
+                Array.from(edgesRaw.values()).flatMap(
+                    (e) => Array.from(e.values())
                 )
 			)
 		);
@@ -108,7 +108,10 @@ export function GraphView() {
         else
             graph.unhoverNode();
 
-        if (isJustPressed(' ') && hit) {
+        if (isJustPressed('Enter')) {
+            graph.toggleWalkersMoving();
+        }
+        else if (isJustPressed(' ') && hit) {
             if (node) {
                 if (graph.edgeStarted())
                     graph.endEdge(node);

@@ -36,10 +36,7 @@ export function Main(
 
 export function Navbar() {
     return (
-        <div className="
-            hidden grid-rows-[auto_1fr] gap-6 min-h-dvh w-full mx-auto p-6 pr-0
-            lg:grid
-        ">
+        <div className="hidden grid-rows-[auto_1fr] gap-6 min-h-dvh w-full mx-auto p-6 pr-0 lg:grid">
             {/* <nav className='basic-card'>
                 hi
             </nav> */}
@@ -51,11 +48,8 @@ export function StandardLayout(
     {children}: Readonly<{children: React.ReactNode}>,
 ) {
     return (
-        <div className="min-h-dvh bg-linear-to-b from-[#E7FFB9] via-emerald-300 to-blue-300 text-black">
-            <div className="
-                grid grid-rows-1 grid-cols-1 justify-items-center
-                lg:grid-cols-[1fr_4fr_1fr]
-            ">
+        <div className="min-h-dvh bg-linear-to-b from-[#E7FFB9] via-emerald-300 to-blue-300">
+            <div className="grid grid-rows-1 grid-cols-1 justify-items-center lg:grid-cols-[1fr_4fr_1fr]">
                 <Navbar/>
                 <Main children={children}/>
             </div>

@@ -39,7 +39,8 @@ export default function Page() {
                         <hr/>
                     </div>
                     <div className="grid grid-cols-2 auto-rows-max gap-x-4 text-center [&>a:nth-child(odd)]:justify-self-start [&>a:nth-child(even)]:justify-self-end">
-                        <Link href="/wafflegame">Waffle Game</Link> <Link href="/wafflegame/info">Project Info</Link>
+                        <Link href="/wafflegame" className="text-nowrap">Waffle Game</Link> <Link href="/wafflegame/info">Project Info</Link>
+                        <Link href="/graphgame" className="text-nowrap">Graph Game (WIP)</Link> <Link href="/graphgame/info">Project Info</Link>
                     </div>
 
                 </div>

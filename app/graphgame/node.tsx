@@ -16,7 +16,9 @@ export default class GraphNode {
     angularVelocity: number = 1;
 
     constructor(id: string, position?: THREE.Vector3) {
+        // id is just for react
         this.id = id;
+        
         this.initialPosition = position ?? new THREE.Vector3(0, 0, 0);
         this.initialRotation = new THREE.Euler(
             2 * Math.PI * randomPositiveOffset(),

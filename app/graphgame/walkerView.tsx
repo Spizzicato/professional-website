@@ -3,6 +3,7 @@ import { useFrame } from "@react-three/fiber";
 import GraphWalker from './walker';
 import { useRef } from 'react';
 import { getColorFromPosition } from './helpers';
+import { useGraphStore } from './graphStore';
 
 const walkerGeometry = new THREE.SphereGeometry(1, 32, 32);
 const defaultScale = 1.33;
@@ -25,6 +26,8 @@ export default function WalkerView({ walker }: WalkerViewProps) {
         if (!walker.currentPathIsValid()) {
             walker.updateTarget();
         }
+
+        if (!useGraphStore.getState().walkersMoving) return;
 
         if (!walker.sourceNode?.mesh) return;
         if (!walker.targetNode?.mesh) {

@@ -11,7 +11,9 @@ export default class GraphEdge {
     mesh!: THREE.Mesh;
 
     constructor(id: string, a: GraphNode, b: GraphNode) {
+        // id is just for react (could be generated on the fly from node ids instead)
         this.id = id;
+
         this.a = a;
         this.b = b;
     }
