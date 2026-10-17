@@ -1,0 +1,4 @@
+walkers not working right with multiplayer
+(problems mainly show up when you delete nodes)
+
+walker synchronization not implemented in general

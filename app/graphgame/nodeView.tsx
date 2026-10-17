@@ -51,9 +51,12 @@ export default function NodeView({ node }: NodeViewProps) {
         raycaster.ray.intersectPlane(clickPlane, hit);
         if (node === graph.grabbedNode && graph.grabOffset) {
             node.mesh.position.lerp(hit.clone().sub(graph.grabOffset), 25 * dt);
+            // publish whole cells rather than every frame, so a drag costs a handful
+            // of updates instead of sixty a second
+            graph.moveNode(node, nearestGridPoint(node.mesh.position));
         }
         else {
-            node.mesh.position.lerp(nearestGridPoint(node.mesh.position), 1 - Math.exp(-12 * dt));
+            node.mesh.position.lerp(node.targetPosition, 1 - Math.exp(-12 * dt));
         }
 
         for (const materialRef of [nodeMaterialRef, selectAuraMaterialRef]) {
@@ -91,6 +94,12 @@ export default function NodeView({ node }: NodeViewProps) {
                     mesh.rotation.copy(node.initialRotation);
                     mesh.scale.copy(node.initialScale);
                     mesh.userData.node = node;
+                }}
+                onPointerDown={(e) => {
+                    e.stopPropagation();
+                    const graph = useGraphStore.getState();
+                    graph.grabNode(node, e.point.clone().sub(node.mesh.position));
+                    graph.selectNode(node);
                 }}
             >
                 <icosahedronGeometry 
@@ -136,6 +145,7 @@ export default function NodeView({ node }: NodeViewProps) {
             >
                 <Html
                     center
+                    wrapperClass="pointer-events-none"
                     style={{
                         color: "white",
                         fontSize: "24px",

@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import { MathUtils } from 'three';
 import { ImprovedNoise } from 'three/addons/math/ImprovedNoise.js';
-import { useGraphStore } from './graphStore';
 import GraphNode from './node';
 
 export const clickPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
@@ -64,7 +63,11 @@ export function clampOrthographicView(
 }
 
 export function nearestGridPoint(v: THREE.Vector3, gridWidth: number = gridSize, gridHeight: number = gridSize): THREE.Vector3 {
-    return new THREE.Vector3().set(gridWidth * Math.round(v.x / gridWidth), gridHeight * Math.round(v.y / gridHeight), v.z);
+    return new THREE.Vector3().set(
+        gridWidth * Math.round(v.x / gridWidth), 
+        gridHeight * Math.round(v.y / gridHeight), 
+        v.z
+    );
 }
 
 const epsilon = 0.1;

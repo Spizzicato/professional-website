@@ -30,9 +30,7 @@ export default function Knob({
         }, 60);
 
         return () => {
-            if (displayTimeout.current) {
-                clearTimeout(displayTimeout.current);
-            }
+            if (displayTimeout.current) clearTimeout(displayTimeout.current);
         };
     }, [value, options]);
 

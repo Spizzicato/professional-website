@@ -1,22 +1,48 @@
 'use client';
 
-import { useEffect } from "react";
-import * as THREE from "three";
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Suspense, useEffect } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Canvas } from '@react-three/fiber';
 import { GraphView } from "./graphView";
 import InputRecorder from "./inputRecorder";
 import Lighting from "./lighting";
 import { useGraphStore } from "./graphStore";
-import NodeMenu from "./nodeMenu";
 import CameraPan from "./cameraPan";
 import GridBackground from "./gridBackground";
+import RoomStatus from "./roomStatus";
 
+const createRoomId = () => crypto.randomUUID().replace(/-/g, "").slice(0, 8);
 
+const normalizeRoomId = (value: string | null) => {
+    if (!value) return undefined;
+    const room = value.trim();
+    if (!/^[a-zA-Z0-9_-]{1,64}$/.test(room)) return undefined;
+    return room;
+}
 
-export default function Page() {
+function GraphGame() {
+    const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+    const roomId = useGraphStore(state => state.roomId);
+    const requestedRoom = normalizeRoomId(searchParams.get("room"));
+
+    // redirects user to requested room or random room if no room was requested
+    useEffect(() => {
+        if (!requestedRoom) {
+            router.replace(`${pathname}?room=${createRoomId()}`);
+            return;
+        }
+
+        useGraphStore.getState().enterRoom(requestedRoom);
+
+        return () => useGraphStore.getState().leaveRoom();
+    }, [requestedRoom, router, pathname]);
+
     return (
         <div className="relative w-full h-dvh overflow-hidden overscroll-none touch-none">
             <InputRecorder />
+            <RoomStatus />
             <Canvas
                 className="w-full h-full touch-none"
                 orthographic={true}
@@ -30,9 +56,16 @@ export default function Page() {
                 <CameraPan />
                 <GridBackground />
                 <Lighting />
-                <GraphView />
+                {roomId ? <GraphView key={roomId} /> : null}
             </Canvas>
-            {/* <NodeMenu /> */}
         </div>
+    );
+}
+
+export default function Page() {
+    return (
+        <Suspense fallback={null}>
+            <GraphGame />
+        </Suspense>
     );
 }

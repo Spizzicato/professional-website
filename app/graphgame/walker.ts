@@ -23,7 +23,10 @@ export default class GraphWalker {
 			state => [state.nodes, state.edges] as const,
             ([nodes, edges]) => {
                 this.updateTarget();
-                this.mesh.visible = nodes.size > 0;
+                // a remote edit can land before react has mounted our mesh
+                if (this.mesh) {
+                    this.mesh.visible = nodes.size > 0;
+                }
 			},
             { equalityFn: shallow }
 		);
@@ -64,13 +67,16 @@ export default class GraphWalker {
 
         if (sourceValid) {
             this.targetNode = this.sourceNode!.getRandomNeighbor();
-        } else if (targetValid) {
+        } 
+        else if (targetValid) {
             this.sourceNode = this.targetNode;
             this.targetNode = this.sourceNode!.getRandomNeighbor();
-        } else if (graph.nodes.size > 0) {
+        } 
+        else if (graph.nodes.size > 0) {
             this.sourceNode = graph.getRandomNode();
             this.targetNode = this.sourceNode.getRandomNeighbor();
-        } else {
+        } 
+        else {
             this.sourceNode = undefined;
             this.targetNode = undefined;
         }
@@ -100,5 +106,9 @@ export default class GraphWalker {
         }
 
         this.updateTarget();
+    }
+
+    dispose() {
+        this.unsubscribeFromGraphStructure?.();
     }
 }

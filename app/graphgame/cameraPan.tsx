@@ -89,12 +89,10 @@ export default function CameraPan() {
 	const handleWheel = (e: WheelEvent) => {
         if (useInputStore.getState().isDown('Control')) return;
 
-		if (e.deltaY < 0) {
+		if (e.deltaY < 0)
 			targetZoom.current *= zoomFactor;
-		}
-        else {
+        else
 			targetZoom.current /= zoomFactor;
-		}
 
 		targetZoom.current = THREE.MathUtils.clamp(
 			targetZoom.current,

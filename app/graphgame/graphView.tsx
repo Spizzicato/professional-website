@@ -12,47 +12,29 @@ import GraphNode from "./node";
 
 
 export function GraphView() {
-    const { camera, pointer, raycaster, scene } = useThree();
+    const { camera, pointer, raycaster, gl } = useThree();
 	const nodes = useGraphStore(state => state.nodes);
     const edgesRaw = useGraphStore(state => state.edges);
 	const edges = useMemo(() => {
 		return Array.from(
 			new Set(
-                Array.from(edgesRaw.values()).flatMap(
-                    (e) => Array.from(e.values())
-                )
+                Array.from(edgesRaw.values()).flatMap((e) => Array.from(e.values()))
 			)
-		);
-	}, [edgesRaw]);
+		).filter((edge) => nodes.has(edge.a) && nodes.has(edge.b) && !edge.deleted);
+	}, [edgesRaw, nodes]);
     const walkers = useGraphStore(state => state.walkers);
 
     useEffect(() => {
-        // initial graph setup
-        const graph = useGraphStore.getState();
-        if (graph.nodes.size > 0) return;
-        const a = graph.addNode(new THREE.Vector3(18, 16, 0));
-        const b = graph.addNode(new THREE.Vector3(30, 16, 0));
-        graph.addEdge(a, b);
-        graph.addWalker(a);
-
-        const handlePointerDown = () => {
-            const graph = useGraphStore.getState();
-
-            const nodeObjects = [...graph.nodes]
-                .map(node => node.mesh)
-                .filter((mesh) => mesh !== undefined);
-
-            const hits = raycaster.intersectObjects(nodeObjects, true);
-
-            if (hits.length > 0) {
-                graph.grabNode(hits[0].object.userData.node, hits[0].point.clone().sub(hits[0].object.position));
-                graph.selectNode(hits[0].object.userData.node);
-            }
-        };
-
         const handleWheel = (e: WheelEvent) => {
             if (!useInputStore.getState().isDown('Control')) return;
 
+            const rect = gl.domElement.getBoundingClientRect();
+            const ndc = new THREE.Vector2(
+                ((e.clientX - rect.left) / rect.width) * 2 - 1,
+                -((e.clientY - rect.top) / rect.height) * 2 + 1,
+            );
+            raycaster.setFromCamera(ndc, camera);
+            
             const graph = useGraphStore.getState();
 
             const nodeObjects = [...graph.nodes]
@@ -76,16 +58,14 @@ export function GraphView() {
             graph.releaseGrabbedNode();
         }
 
-        window.addEventListener('pointerdown', handlePointerDown);
         window.addEventListener('pointerup', handlePointerUp);
         window.addEventListener('wheel', handleWheel);
 
         return () => {
-            window.removeEventListener('pointerdown', handlePointerDown);
             window.removeEventListener('pointerup', handlePointerUp);
             window.removeEventListener('wheel', handleWheel);
         };
-    }, []);
+    }, [camera, gl, raycaster]);
 
     useFrame((state, dt) => {
         const graph = useGraphStore.getState();
@@ -103,6 +83,7 @@ export function GraphView() {
         const hits = raycaster.intersectObjects(nodeObjects, true);
 
         const node = hits[0]?.object.userData.node ?? undefined;
+        
         if (node)
             graph.hoverNode(node);
         else
@@ -121,7 +102,7 @@ export function GraphView() {
             else {
                 if (!gridCellContainingPointContainsAnyNodes(hit, [...graph.nodes])) {
                     const newNode = graph.addNode(hit);
-                    if (graph.edgeStarted()) 
+                    if (newNode && graph.edgeStarted()) 
                         graph.endEdge(newNode);
                 }
             }

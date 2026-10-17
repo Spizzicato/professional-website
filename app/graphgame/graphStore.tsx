@@ -4,6 +4,9 @@ import { subscribeWithSelector } from "zustand/middleware";
 import GraphNode from "./node";
 import GraphEdge from "./edge";
 import GraphWalker from "./walker";
+import { nearestGridPoint } from "./helpers";
+import * as roomSync from "./roomSync";
+import { RoomStatus } from "./roomSync";
 
 export interface GraphStore {
 	nodes: Set<GraphNode>;
@@ -23,6 +26,9 @@ export interface GraphStore {
 
 	walkersMoving: boolean;
 
+	roomId: string | undefined;
+	connectionStatus: RoomStatus;
+
 	getNewIntId: () => string;
 
 	edgeStarted: () => boolean;
@@ -38,9 +44,10 @@ export interface GraphStore {
 	grabNode: (node: GraphNode, pos: THREE.Vector3) => void;
 	releaseGrabbedNode: () => void;
 
-	addNode: (position?: THREE.Vector3) => GraphNode;
+	addNode: (position?: THREE.Vector3) => GraphNode | undefined;
+	moveNode: (node: GraphNode, position: THREE.Vector3) => void;
 	edgeExists: (a: GraphNode, b: GraphNode) => boolean;
-	addEdge: (a: GraphNode, b: GraphNode) => GraphEdge;
+	addEdge: (a: GraphNode, b: GraphNode) => void;
 	removeEdge: (a: GraphNode, b: GraphNode) => void;
 	removeNode: (node: GraphNode) => void;
 
@@ -55,6 +62,13 @@ export interface GraphStore {
 		parameter: number,
 		value: number
 	) => void;
+
+	enterRoom: (roomId: string) => void;
+	leaveRoom: () => void;
+}
+
+function keepIfPresent(node: GraphNode | undefined, nodes: Set<GraphNode>) {
+	return node && nodes.has(node) ? node : undefined;
 }
 
 export const useGraphStore = create<GraphStore>()(subscribeWithSelector((set, get) => ({
@@ -62,6 +76,7 @@ export const useGraphStore = create<GraphStore>()(subscribeWithSelector((set, ge
 	edges: new Map(),
 	walkers: new Set(),
 	walkersMoving: true,
+
 	topId: -1,
 
     selectedNode: undefined,
@@ -74,6 +89,9 @@ export const useGraphStore = create<GraphStore>()(subscribeWithSelector((set, ge
 	edgeStart: undefined,
 
     synthVersion: 0,
+
+	roomId: undefined,
+	connectionStatus: "offline",
 
 	getNewIntId: () => {
 		const id = get().topId + 1;
@@ -105,54 +123,44 @@ export const useGraphStore = create<GraphStore>()(subscribeWithSelector((set, ge
 	},
 
 	selectNode: (node) => {
-		set({
-			selectedNode: node,
-		});
+		set({ selectedNode: node });
 	},
 
     deselectNode: () => {
-        set({
-            selectedNode: undefined,
-        });
+        set({ selectedNode: undefined });
     },
 
     hoverNode: (node) => {
-        set({
-            hoveredNode: node,
-        });
+        set({ hoveredNode: node });
     },
 
     unhoverNode: () => {
-        set({
-            hoveredNode: undefined,
-        });
+        set({ hoveredNode: undefined });
     },
 
 	grabNode: (node, pos) => {
-		set({
-			grabbedNode: node,
-			grabOffset: pos,
-		});
+		set({ grabbedNode: node, grabOffset: pos });
 	},
 
 	releaseGrabbedNode: () => {
-		set({
-			grabbedNode: undefined,
-			grabOffset: undefined,
-		});
+		const { grabbedNode } = get();
+
+		// the drag only published whole grid cells, so settle on the one we landed in
+		if (grabbedNode?.mesh)
+			roomSync.moveNode(grabbedNode, nearestGridPoint(grabbedNode.mesh.position));
+
+		set({ grabbedNode: undefined, grabOffset: undefined });
 	},
 
+	// every mutation below goes through the shared document and comes back as a
+	// snapshot, so a local edit takes exactly the same path as a remote one
+
 	addNode: (position?: THREE.Vector3) => {
-		const node = new GraphNode(get().getNewIntId(), position ?? new THREE.Vector3(0, 0, 0));
+		return roomSync.createNode(position ?? new THREE.Vector3(0, 0, 0));
+	},
 
-		set((state) => {
-			const nodes = new Set(state.nodes);
-			nodes.add(node);
-
-			return { nodes };
-		});
-
-		return node;
+	moveNode: (node, position) => {
+		roomSync.moveNode(node, position);
 	},
 
 	edgeExists: (a, b) => {
@@ -160,75 +168,22 @@ export const useGraphStore = create<GraphStore>()(subscribeWithSelector((set, ge
 	},
 
 	addEdge: (a, b) => {
-		const edge = new GraphEdge(get().getNewIntId(), a, b);
-
-		a.neighbors.add(b);
-		b.neighbors.add(a);
-
-		set((state) => {
-			const edges = new Map(state.edges);
-
-			const aEdges = new Map(edges.get(a.id));
-			aEdges.set(b.id, edge);
-			edges.set(a.id, aEdges);
-
-			const bEdges = new Map(edges.get(b.id));
-			bEdges.set(a.id, edge);
-			edges.set(b.id, bEdges);
-
-			return { edges };
-		});
-
-		return edge;
+		roomSync.createEdge(a, b);
 	},
 
 	removeEdge: (a, b) => {
-		const edge = get().edges.get(a.id)?.get(b.id);
-
-		if (!edge) return;
-
-		a.neighbors.delete(b);
-		b.neighbors.delete(a);
-
-		set((state) => {
-			const edges = new Map(state.edges);
-
-			const aEdges = new Map(edges.get(a.id));
-			aEdges.delete(b.id);
-			edges.set(a.id, aEdges);
-
-			const bEdges = new Map(edges.get(b.id));
-			bEdges.delete(a.id);
-			edges.set(b.id, bEdges);
-
-			return { edges };
-		});
+		roomSync.deleteEdge(a, b);
 	},
 
 	removeNode: (node) => {
-		const neighbors = Array.from(node.neighbors);
-
-		for (const neighbor of neighbors) {
-			get().removeEdge(node, neighbor);
-		}
-
-		set((state) => {
-			const nodes = new Set(state.nodes);
-			nodes.delete(node);
-
-			const edges = new Map(state.edges);
-			edges.delete(node.id);
-
-			return { nodes, edges };
-		});
+		roomSync.deleteNode(node);
 	},
 
 	getRandomNode: () => {
 		const nodes = Array.from(get().nodes);
 
-		if (nodes.length === 0) {
+		if (nodes.length === 0)
 			throw new Error("No nodes available to select a random node.");
-		}
 
 		const randomIndex = Math.floor(Math.random() * nodes.length);
 		return nodes[randomIndex];
@@ -266,4 +221,65 @@ export const useGraphStore = create<GraphStore>()(subscribeWithSelector((set, ge
             synthVersion: state.synthVersion + 1,
         }));
     },
+
+	enterRoom: (roomId) => {
+		if (get().roomId === roomId) return;
+
+		get().leaveRoom();
+
+		set({ roomId, connectionStatus: "connecting" });
+
+		roomSync.connectRoom(roomId, {
+			onGraphChanged: ({ nodes, edges }) => {
+				// anything we were pointing at may have been deleted by someone else
+				set((state) => ({
+					nodes,
+					edges,
+					selectedNode: keepIfPresent(state.selectedNode, nodes),
+					hoveredNode: keepIfPresent(state.hoveredNode, nodes),
+					grabbedNode: keepIfPresent(state.grabbedNode, nodes),
+					grabOffset: keepIfPresent(state.grabbedNode, nodes) ? state.grabOffset : undefined,
+					edgeStart: keepIfPresent(state.edgeStart, nodes),
+				}));
+
+				// the first walker has to wait for a graph to walk on
+				// with an empty room, this means waiting for the seed or for the first node anyone adds
+				if (get().walkers.size === 0 && nodes.size > 0) 
+					get().addWalker();
+			},
+
+			onStatusChanged: (connectionStatus) => set({ connectionStatus }),
+
+			onSynced: () => {
+				// give whoever opens a fresh room something to play with
+				// but do not refill a room the people already in it have deliberately emptied
+				if (roomSync.roomIsEmpty() && roomSync.peerCount() <= 1)
+					roomSync.seedRoom();
+			},
+		});
+	},
+
+	leaveRoom: () => {
+		roomSync.disconnectRoom();
+
+		for (const walker of get().walkers)
+			walker.dispose();
+
+		set({
+			roomId: undefined,
+			connectionStatus: "offline",
+			nodes: new Set(),
+			edges: new Map(),
+			walkers: new Set(),
+			topId: -1,
+			selectedNode: undefined,
+			hoveredNode: undefined,
+			grabbedNode: undefined,
+			grabOffset: undefined,
+			edgeStart: undefined,
+			walkersMoving: true,
+			synthVersion: 0,
+		});
+	},
+
 })));

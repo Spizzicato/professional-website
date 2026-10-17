@@ -38,6 +38,7 @@ export class NodeSynth {
     private duration!: number;
 
     private started = false;
+    private disposed = false;
 
     private parameterOptions = [notes, notes, notes, notes];
     private parameterIndices = [0, 0, 0, 0];
@@ -68,11 +69,18 @@ export class NodeSynth {
     }
 
     async play() {
+        if (this.disposed) return;
         await this.ensureStarted();
+
+        // someone else may have deleted the node while we were waiting on Tone
+        if (this.disposed) return;
+
         this.synth.triggerAttackRelease(this.frequency, this.duration, Tone.now());
     }
 
     updateSynth() {
+        if (this.disposed) return;
+
         this.synth.set({
             envelope: {
                 attack: 0.005,
@@ -106,6 +114,13 @@ export class NodeSynth {
 
     getSelectedOptionName(param: number) {
         return this.parameterOptions[param][this.parameterIndices[param]][0];
+    }
+
+    dispose() {
+        if (this.disposed) return;
+
+        this.disposed = true;
+        this.synth.dispose();
     }
 
     updateParameter(param: number, value: number) {

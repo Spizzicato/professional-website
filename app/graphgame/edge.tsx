@@ -11,7 +11,7 @@ export default class GraphEdge {
     mesh!: THREE.Mesh;
 
     constructor(id: string, a: GraphNode, b: GraphNode) {
-        // id is just for react (could be generated on the fly from node ids instead)
+        // the canonical pair of node ids, see edgeKey in roomSync
         this.id = id;
 
         this.a = a;

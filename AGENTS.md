@@ -3,6 +3,15 @@
 This is my professional website.
 It has a main page and some side projects on other pages.
 
+The graph game is multiplayer, so it needs two processes in development:
+`npm run dev` for the site and `npm run rooms` for the Yjs relay in `server/`.
+Without the relay the game still works, it just does not sync.
+Set `NEXT_PUBLIC_ROOM_SERVER_URL` to point the client somewhere other than
+`ws://<current host>:1234` (production: `wss://your-app.fly.dev`).
+
+Production relay: Fly.io via `fly.rooms.toml` and `Dockerfile.rooms`. See
+`server/FLY.md` for deploy steps and `npm run rooms:deploy`.
+
 # Code Style General Notes
 
 Please try to copy the existing code style if possible.

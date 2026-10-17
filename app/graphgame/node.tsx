@@ -10,16 +10,18 @@ export default class GraphNode {
     neighbors: Set<GraphNode> = new Set();
     mesh!: THREE.Mesh;
     initialPosition!: THREE.Vector3;
+    targetPosition!: THREE.Vector3;
     initialRotation!: THREE.Euler;
     initialScale!: THREE.Vector3;
     synth: NodeSynth = new NodeSynth();
     angularVelocity: number = 1;
 
     constructor(id: string, position?: THREE.Vector3) {
-        // id is just for react
+        // shared with everyone in the room, so it also doubles as the react key
         this.id = id;
         
         this.initialPosition = position ?? new THREE.Vector3(0, 0, 0);
+        this.targetPosition = this.initialPosition.clone();
         this.initialRotation = new THREE.Euler(
             2 * Math.PI * randomPositiveOffset(),
             2 * Math.PI * randomPositiveOffset(),

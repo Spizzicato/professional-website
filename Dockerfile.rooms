@@ -1,0 +1,17 @@
+# Graph game Yjs relay (deploy with fly deploy --config fly.rooms.toml)
+# Uses server/package.json so the image does not install Next.js or native addons.
+
+FROM node:22-alpine
+
+WORKDIR /app
+
+COPY server/package.json server/package-lock.json ./
+RUN npm ci --omit=dev
+
+COPY server/roomServer.mjs ./
+
+ENV NODE_ENV=production
+
+EXPOSE 8080
+
+CMD ["node", "roomServer.mjs"]
