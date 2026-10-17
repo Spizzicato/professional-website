@@ -22,6 +22,11 @@ const port = Number.parseInt(
 const host = process.env.HOST ?? "0.0.0.0";
 const pingInterval = 30000;
 
+if (!Number.isFinite(port) || port <= 0) {
+	console.error("Invalid listen port:", process.env.PORT ?? process.env.ROOM_SERVER_PORT);
+	process.exit(1);
+}
+
 const roomIdPattern = /^[a-zA-Z0-9_-]{1,64}$/;
 
 const rooms = new Map();
@@ -205,6 +210,11 @@ webSocketServer.on("connection", (socket, request) => {
 	}
 
 	setupConnection(socket, getRoom(roomId));
+});
+
+server.on("error", (error) => {
+	console.error("Room server failed to start:", error);
+	process.exit(1);
 });
 
 server.listen(port, host, () => {

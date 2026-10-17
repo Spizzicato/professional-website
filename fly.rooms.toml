@@ -11,6 +11,7 @@ primary_region = 'iad'
 
 [env]
   NODE_ENV = 'production'
+  PORT = '8080'
 
 [http_service]
   internal_port = 8080
@@ -22,12 +23,11 @@ primary_region = 'iad'
   [[http_service.checks]]
     interval = '30s'
     timeout = '5s'
-    grace_period = '10s'
+    grace_period = '30s'
     method = 'GET'
     path = '/'
 
 [[vm]]
-  memory = '256mb'
   cpu_kind = 'shared'
   cpus = 1
-  memory_mb = 256
+  memory_mb = 512
