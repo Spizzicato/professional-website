@@ -10,6 +10,7 @@ import { useGraphStore } from "./graphStore";
 import CameraPan from "./cameraPan";
 import GridBackground from "./gridBackground";
 import RoomStatus from "./roomStatus";
+import ControlsHelp from "./controlsHelp";
 
 const createRoomId = () => crypto.randomUUID().replace(/-/g, "").slice(0, 8);
 
@@ -43,6 +44,7 @@ function GraphGame() {
         <div className="relative w-full h-dvh overflow-hidden overscroll-none touch-none">
             <InputRecorder />
             <RoomStatus />
+            <ControlsHelp />
             <Canvas
                 className="w-full h-full touch-none"
                 orthographic={true}

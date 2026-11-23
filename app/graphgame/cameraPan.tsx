@@ -69,6 +69,9 @@ export default function CameraPan() {
 	const handlePointerMove = (e: PointerEvent) => {
 		const graph = useGraphStore.getState();
 
+		// the button may have been released over overlay ui, where we never saw the pointerup
+		if (e.buttons === 0) dragging.current = false;
+
 		if (!dragging.current || graph.grabbedNode) return;
 
 		const dx = e.clientX - lastPointer.current.x;

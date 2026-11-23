@@ -28,7 +28,7 @@ export default function Page() {
                         <hr/>
                     </div>
                     <div className="grid grid-cols-1 justify-items-center">
-                        <Link href="https://drive.google.com/file/d/1BSi26PO8rQ16zoABcI_kasdMA3qIW4mw/view?usp=sharing">Resume</Link>
+                        <Link href="https://drive.google.com/file/d/1BSi26PO8rQ16zoABcI_kasdMA3qIW4mw/view">Resume</Link>
                         <Link href="https://github.com/Spizzicato">GitHub</Link>
                         <Link href="https://www.linkedin.com/in/jackson-wright-61008a30b/">LinkedIn</Link>
                         <Link href="https://leetcode.com/u/Spizzicato/">LeetCode</Link>

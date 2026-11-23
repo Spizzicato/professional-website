@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useInputStore } from "./inputStore";
+import { eventTargetsGameUi } from "./helpers";
 
 function syncModifiers(e: { ctrlKey: boolean; shiftKey: boolean; altKey: boolean; metaKey: boolean }) {
 	const { keyDown, keyUp } = useInputStore.getState();
@@ -17,11 +18,6 @@ export default function InputRecorder() {
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
 			syncModifiers(e);
-            keyDown(e.key);
-
-			if (e.key === " " || e.key === "Enter" || e.key === "ArrowUp" || e.key === "ArrowDown" || e.key === "ArrowLeft" || e.key === "ArrowRight") {
-				e.preventDefault();
-			}
 
 			if (e.ctrlKey || e.metaKey) {
 				if (
@@ -30,6 +26,15 @@ export default function InputRecorder() {
 				) {
 					e.preventDefault();
 				}
+			}
+
+			// keys pressed while an overlay button has focus belong to that button
+			if (eventTargetsGameUi(e)) return;
+
+            keyDown(e.key);
+
+			if (e.key === " " || e.key === "Enter" || e.key === "ArrowUp" || e.key === "ArrowDown" || e.key === "ArrowLeft" || e.key === "ArrowRight") {
+				e.preventDefault();
 			}
 		};
 
@@ -40,6 +45,10 @@ export default function InputRecorder() {
 
 		const handleWheel = (e: WheelEvent) => {
 			syncModifiers(e);
+
+			// let overlay panels scroll, but never let ctrl+wheel zoom the page
+			if (eventTargetsGameUi(e) && !e.ctrlKey) return;
+
 			e.preventDefault();
 		};
 

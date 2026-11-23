@@ -90,6 +90,11 @@ export function gridCellContainingPointContainsAnyNodes(point: THREE.Vector3, no
     return nodes.find(node => box.containsPoint(node.mesh!.position));
 }
 
+// overlay ui is marked with data-game-ui so window-level game input can ignore it
+export function eventTargetsGameUi(e: Event) {
+    return e.target instanceof Element && !!e.target.closest("[data-game-ui]");
+}
+
 export type ParameterOption = [string, number];
 
 export const parameterDebounceTime = 60;

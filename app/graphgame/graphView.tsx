@@ -5,7 +5,7 @@ import NodeView from "./nodeView";
 import EdgeView from "./edgeView";
 import * as THREE from "three";
 import { useInputStore } from "./inputStore";
-import { clickPlane, gridCellContainingPointContainsAnyNodes, gridSize, nearestGridPoint } from "./helpers";
+import { clickPlane, eventTargetsGameUi, gridCellContainingPointContainsAnyNodes, gridSize, nearestGridPoint } from "./helpers";
 import WalkerView from "./walkerView";
 import GraphNode from "./node";
 
@@ -26,6 +26,7 @@ export function GraphView() {
 
     useEffect(() => {
         const handleWheel = (e: WheelEvent) => {
+            if (eventTargetsGameUi(e)) return;
             if (!useInputStore.getState().isDown('Control')) return;
 
             const rect = gl.domElement.getBoundingClientRect();
